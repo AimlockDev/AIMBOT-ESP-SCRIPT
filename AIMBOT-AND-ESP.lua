@@ -6,21 +6,19 @@ local RunService = game:GetService("RunService")
 local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 local Circle = Instance.new("Frame", ScreenGui)
 
--- Circle properties
-local circleSize = 200 -- Circle diameter (200)
+local circleSize = 200
 Circle.Size = UDim2.new(0, circleSize, 0, circleSize)
-Circle.BackgroundColor3 = Color3.new(1, 0, 0) -- Red color
-Circle.AnchorPoint = Vector2.new(0.5, 0.5) -- Anchor to center
+Circle.BackgroundColor3 = Color3.new(1, 0, 0)
+Circle.AnchorPoint = Vector2.new(0.5, 0.5)
 Circle.BorderSizePixel = 0
-Circle.BackgroundTransparency = 0.5 -- Make it semi-transparent
+Circle.BackgroundTransparency = 0.5
 Circle.ClipsDescendants = true
 
--- Create a circular mask
 local Mask = Instance.new("UICorner", Circle)
 Mask.CornerRadius = UDim.new(1, 0)
 
 local isLockingOn = false
-local lockedPlayer = nil -- Track the currently locked player
+local lockedPlayer = nil
 
 local function isPlayerInCircle(player)
     if player.Character and player.Character:FindFirstChild("Head") then
@@ -45,66 +43,56 @@ end)
 UIS.InputEnded:Connect(function(input, gameProcessed)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         isLockingOn = false
-        lockedPlayer = nil -- Reset locked player when mouse button is released
+        lockedPlayer = nil
     end
 end)
 
 RunService.RenderStepped:Connect(function()
-    -- Update the circle's position to the mouse cursor
     local mouse = LocalPlayer:GetMouse()
-    Circle.Position = UDim2.new(0, mouse.X, 0, mouse.Y) -- Center the circle on the cursor
+    Circle.Position = UDim2.new(0, mouse.X, 0, mouse.Y)
 
     if isLockingOn then
-        if not lockedPlayer then -- Only lock onto a player if not already locked
+        if not lockedPlayer then
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and isPlayerInCircle(player) then
-                    lockedPlayer = player -- Lock onto this player
-                    -- Lock the camera to the target player's head
+                    lockedPlayer = player
                     Camera.CFrame = CFrame.new(Camera.CFrame.Position, player.Character.Head.Position)
-                    break -- Lock on to the first player found within the circle
+                    break
                 end
             end
         else
-            -- Maintain lock on the currently locked player
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, lockedPlayer.Character.Head.Position)
         end
     end
 end)
 
--- Function to create rainbow color
 local function rainbowColor()
     local time = tick() * 3
     return Color3.new(math.sin(time), math.sin(time + 2), math.sin(time + 4))
 end
 
--- Function to create ESP outline
 local function createESP(player)
     local highlight = Instance.new("Highlight")
-    highlight.FillColor = Color3.new(1, 1, 1) -- Optional: set fill color (white)
-    highlight.OutlineColor = rainbowColor() -- Set outline color to rainbow
-    highlight.OutlineTransparency = 0 -- Fully visible outline
+    highlight.FillColor = Color3.new(1, 1, 1)
+    highlight.OutlineColor = rainbowColor()
+    highlight.OutlineTransparency = 0
     highlight.Parent = player.Character or game.Workspace
-
-    -- Update ESP outline when character spawns
     player.CharacterAdded:Connect(function(character)
         highlight.Parent = character
     end)
 
-    -- Update rainbow color continuously
     RunService.RenderStepped:Connect(function()
         highlight.OutlineColor = rainbowColor()
     end)
 end
 
--- Loop through players and create ESP for each
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer and player.Character then
         createESP(player)
     end
 end
 
--- Update ESP whenever a new player joins
 Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Wait() -- Wait for character to load
+    player.CharacterAdded:Wait()
     createESP(player)
 end)
